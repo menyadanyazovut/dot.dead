@@ -16,6 +16,55 @@ const UI = (() => {
     return `<span class="sym">${s}</span>`;
   }
 
+  // --- dissolution: progressive text corruption ------------------------------
+  // As the world simplifies, the engraved hints rot into gibberish: a few
+  // letters first, more and more as it deepens, until none of the text is
+  // readable. Each string keeps its length (and its spaces).
+  const GIB = '!@#$%^&*<>?/\\|=+~';
+  let corruptionLevel = 0;
+
+  // deterministic 0..1 from an integer seed (stable across frames → no flicker)
+  function rnd01(seed) {
+    let h = Math.imul(seed ^ 0x9e3779b9, 2654435761);
+    h ^= h >>> 15; h = Math.imul(h, 2246822519); h ^= h >>> 13;
+    return ((h >>> 0) % 100000) / 100000;
+  }
+
+  // each character flips on a fixed threshold, so corruption only ever deepens
+  // as the level rises and a given letter never flickers back and forth
+  function corrupt(text, level) {
+    if (text == null || level <= 0) return text;
+    let out = '';
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === ' ' || ch === '\n' || ch === '\t') { out += ch; continue; }
+      const code = text.charCodeAt(i);
+      const thr = rnd01(i * 131 + code * 977 + text.length * 31);
+      if (level >= thr) out += GIB[(rnd01(i * 17 + code * 53) * GIB.length) | 0];
+      else out += ch;
+    }
+    return out;
+  }
+
+  // corrupt the live text of an element in place, preserving its markup and
+  // remembering each text node's original the first time it is touched
+  function corruptElement(root, level) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      if (node.__orig === undefined) node.__orig = node.nodeValue;
+      node.nodeValue = corrupt(node.__orig, level);
+    }
+  }
+
+  // driven by the finale each frame with a rising 0..1 level
+  function setCorruption(level) {
+    corruptionLevel = level;
+    if (level > 0 && currentKey && currentKey !== 'quote' && panel.classList.contains('open')) {
+      corruptElement(panel, level);
+    }
+  }
+
   function fmtStars(n) {
     if (n == null) return '?';
     return n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'k' : String(n);
@@ -136,7 +185,7 @@ const UI = (() => {
 
   function setLabel(text) {
     label.style.display = text ? 'block' : 'none';
-    if (text) label.textContent = text;
+    if (text) label.textContent = corrupt(text, corruptionLevel);
   }
 
   function dismissIntro() {
@@ -147,5 +196,5 @@ const UI = (() => {
     if (intro) intro.classList.remove('gone');
   }
 
-  return { show, showQuote, setHint, setTester, hide, setLabel, dismissIntro, showIntro };
+  return { show, showQuote, setHint, setTester, hide, setLabel, dismissIntro, showIntro, setCorruption };
 })();

@@ -10,6 +10,7 @@ const PixelRenderer = (() => {
     uniform vec2 uRes; // render-target resolution
     uniform float uVivid; // 0 = muted overcast, 1 = bright clear-day (the summit)
     uniform float uWhite; // dissolution: final mix toward pure white (0..1)
+    uniform float uMerge; // dissolution: 0 = full palette, 1 = colours merged flat
     varying vec2 vUv;
 
     // compact 4x4 Bayer (no array indexing; WebGL1-safe)
@@ -33,10 +34,16 @@ const PixelRenderer = (() => {
         c = mix(c, vivid, uVivid);
       }
 
+      // dissolution: merge colours — bleed toward grey and crush the palette so
+      // the broken world collapses into a handful of flat bands (pixel size and
+      // sharpness are untouched; this only reduces the number of distinct colours)
+      float lm = dot(c, vec3(0.299, 0.587, 0.114));
+      c = mix(c, vec3(lm), uMerge * 0.8);
+
       // posterize with ordered dithering, at RT pixel scale
       vec2 p = floor(vUv * uRes);
       float d = bayer4(p) - 0.5;
-      float levels = 7.0;
+      float levels = mix(7.0, 2.0, clamp(uMerge, 0.0, 1.0));
       c = floor(c * levels + d * 0.9 + 0.5) / levels;
 
       // gentle vignette — eased off on the bright summit so the corners stay open
@@ -97,6 +104,7 @@ const PixelRenderer = (() => {
       uRes: { value: new THREE.Vector2(480, RT_HEIGHT) },
       uVivid: { value: 0 },
       uWhite: { value: 0 },
+      uMerge: { value: 0 },
     };
     const postScene = new THREE.Scene();
     postScene.add(new THREE.Mesh(
@@ -140,13 +148,18 @@ const PixelRenderer = (() => {
       uniforms.uVivid.value = Math.max(0, Math.min(1, v));
     }
 
-    // dissolution: bleach the final frame to pure white. The pixel size and the
-    // palette are deliberately left untouched — only the geometry simplifies.
+    // dissolution: bleach the final frame to pure white (kept for later; the
+    // pixel size stays constant — this only fades the image out).
     function setWhiteout(white) {
       uniforms.uWhite.value = Math.max(0, Math.min(1, white));
     }
 
-    return { renderer, resize, render, setVivid, setWhiteout };
+    // dissolution: merge the palette down (desaturate + crush colour levels)
+    function setMerge(m) {
+      uniforms.uMerge.value = Math.max(0, Math.min(1, m));
+    }
+
+    return { renderer, resize, render, setVivid, setWhiteout, setMerge };
   }
 
   return { create };

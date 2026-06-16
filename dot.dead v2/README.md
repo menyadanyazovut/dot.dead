@@ -51,16 +51,18 @@ paper, barely audible at silhouette range, soft and clear up close. Take the
 paper (aim + E): the organ fades over 5 s, the quote and the gold counter
 (n/10) both show for 10 s and fade together. Progress resets on reload —
 every visit is a fresh hunt. Taking the last paper begins the **dissolution**:
-the fog lifts and the world itself loses its detail. The pixels stay the same
-size — this is not an image effect. Instead the geometry simplifies: every
-object is morphed toward its own bounding box, so every five seconds, 10% more
-each step, a tree slumps into a stack of cubes, a bush becomes a block, a fence
-sheds its detail down to plain rectangles, a carved headstone becomes a
-featureless slab — spheres turning to cubes, cylinders and cones to boxes. The
-soundscape muffles in step. After 35 s the objects also begin to fade (20% every
-five seconds). By ~50 s the world is as primitive as it can be; by ~60 s it has
-faded out entirely, leaving you in an empty white infinity. (See
-`src/dissolve.js`.)
+the fog lifts and, smoothly and continuously over a minute, the world itself
+loses its detail and breaks down. The pixels stay the same size — this is not an
+image effect — and there are no stepped jumps; the world simply shifts strangely
+and steadily. Two stages stack: every object is first morphed toward its own
+bounding box (spheres → cubes, cylinders and cones → boxes, a fence → plain
+rectangles, a carved headstone → a slab), then the whole scene is welded onto a
+coarse world-space grid so those boxes fuse into a few big, ultra-primitive
+blocks. In step the palette merges down to a couple of flat bands, the
+soundscape muffles to a dull distant tone, and the engraved hints on the graves
+corrupt letter by letter into gibberish (each string keeps its length). By ~60 s
+the world is at its most broken and primitive and simply stays there. (See
+`src/dissolve.js`. The fade-to-white ending is disabled for now.)
 
 The **compass** (E) slides up from your pocket: a metal case and a needle
 under glass, no letters. The needle always points to the nearest unfound
