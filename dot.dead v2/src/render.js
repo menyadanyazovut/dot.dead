@@ -9,8 +9,6 @@ const PixelRenderer = (() => {
     uniform sampler2D tDiffuse;
     uniform vec2 uRes; // render-target resolution
     uniform float uVivid; // 0 = muted overcast, 1 = bright clear-day (the summit)
-    uniform float uPixel; // dissolution: block size in RT pixels (1 = none)
-    uniform float uLevels; // dissolution: posterize colour levels (7 normal → 2)
     uniform float uWhite; // dissolution: final mix toward pure white (0..1)
     varying vec2 vUv;
 
@@ -19,11 +17,7 @@ const PixelRenderer = (() => {
     float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
 
     void main() {
-      // dissolution: snap sampling to ever-coarser blocks so the whole image
-      // chunks down toward a few giant pixels as the world simplifies
-      vec2 blocks = max(uRes / max(uPixel, 1.0), vec2(1.0));
-      vec2 suv = (floor(vUv * blocks) + 0.5) / blocks;
-      vec3 c = texture2D(tDiffuse, suv).rgb;
+      vec3 c = texture2D(tDiffuse, vUv).rgb;
 
       // muted overcast grade: desaturate a touch, cool the shadows
       float l = dot(c, vec3(0.299, 0.587, 0.114));
@@ -42,7 +36,7 @@ const PixelRenderer = (() => {
       // posterize with ordered dithering, at RT pixel scale
       vec2 p = floor(vUv * uRes);
       float d = bayer4(p) - 0.5;
-      float levels = uLevels;
+      float levels = 7.0;
       c = floor(c * levels + d * 0.9 + 0.5) / levels;
 
       // gentle vignette — eased off on the bright summit so the corners stay open
@@ -102,8 +96,6 @@ const PixelRenderer = (() => {
       tDiffuse: { value: rtScene.texture },
       uRes: { value: new THREE.Vector2(480, RT_HEIGHT) },
       uVivid: { value: 0 },
-      uPixel: { value: 1 },
-      uLevels: { value: 7 },
       uWhite: { value: 0 },
     };
     const postScene = new THREE.Scene();
@@ -148,16 +140,13 @@ const PixelRenderer = (() => {
       uniforms.uVivid.value = Math.max(0, Math.min(1, v));
     }
 
-    // dissolution: detail 0..1 chunks the image down and drops colour levels;
-    // white 0..1 bleaches the final frame to pure white.
-    function setDecay(detail, white) {
-      const d = Math.max(0, Math.min(1, detail));
-      uniforms.uPixel.value = 1 + d * 47;   // 1 → 48 px blocks
-      uniforms.uLevels.value = 7 - d * 5;   // 7 → 2 colour levels
+    // dissolution: bleach the final frame to pure white. The pixel size and the
+    // palette are deliberately left untouched — only the geometry simplifies.
+    function setWhiteout(white) {
       uniforms.uWhite.value = Math.max(0, Math.min(1, white));
     }
 
-    return { renderer, resize, render, setVivid, setDecay };
+    return { renderer, resize, render, setVivid, setWhiteout };
   }
 
   return { create };
