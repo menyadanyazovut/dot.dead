@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dot.dead — a graveyard of discontinued projects</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="game"></div>
+  <div id="crosshair"></div>
+  <div id="grave-label"></div>
+  <div id="panel"></div>
+  <div id="pickup-hint"></div>
+  <div id="paper-counter"></div>
+  <div id="tester-badge">Tester mode on</div>
+
+  <div id="intro">
+    <h1>dot<span>.dead</span></h1>
+    <p>a graveyard of discontinued projects</p>
+    <p>
+      WASD to walk &middot; SHIFT to run &middot; SPACE to jump &middot; mouse to look<br />
+      stand at a grave to read it &middot; E for the compass &middot; ESC to release the mouse<br />
+      M to mute &middot; the graveyard does not end
+    </p>
+    <p class="hint">click to enter</p>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="src/data/famousGraves.js"></script>
+  <script src="src/data/moreGraves.js"></script>
+  <script src="src/data/baked.js"></script>
+  <script src="src/github.js"></script>
+  <script src="src/terrain.js"></script>
+  <script src="src/landmarks.js"></script>
+  <script src="src/scene.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/controls.js"></script>
+  <script src="src/compass.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>

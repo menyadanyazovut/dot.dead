@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+:root {
+  --panel-bg: rgba(20, 24, 22, 0.88);
+  --edge: #5a6356;
+  --text: #d4d8cd;
+  --dim: #8d957f;
+  --accent: #d8cf9a;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #11151a;
+  font-family: 'Press Start 2P', monospace;
+  color: var(--text);
+}
+
+#game canvas { display: block; image-rendering: pixelated; cursor: crosshair; }
+
+/* crosshair */
+#crosshair {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: rgba(220, 224, 210, 0.6);
+  pointer-events: none;
+  z-index: 4;
+}
+
+/* grave name hint above the panel */
+#grave-label {
+  display: none;
+  position: fixed;
+  left: 50%;
+  bottom: 26vh;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  font-size: 10px;
+  color: var(--accent);
+  background: var(--panel-bg);
+  border: 1px solid var(--edge);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+/* minimal epitaph card, bottom-center */
+#panel {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translate(-50%, 160%);
+  width: 460px;
+  max-width: calc(100vw - 32px);
+  padding: 14px 18px;
+  background: var(--panel-bg);
+  border: 1px solid var(--edge);
+  transition: transform 0.25s steps(6);
+  z-index: 10;
+  line-height: 1.8;
+  text-align: center;
+}
+#panel.open { transform: translate(-50%, 0); }
+
+.panel-head { font-size: 12px; color: #fff; margin-bottom: 6px; }
+.years { font-size: 9px; color: var(--accent); margin-bottom: 8px; }
+.epitaph { font-size: 9px; font-style: italic; margin: 0 0 8px; }
+.last-words { font-size: 8px; color: var(--text); margin: 0 0 8px; }
+.last-words b { color: var(--accent); }
+.cause { font-size: 8px; color: var(--dim); margin: 0 0 8px; }
+
+/* paper pickup hint, just under the crosshair */
+#pickup-hint {
+  display: none;
+  position: fixed;
+  left: 50%;
+  top: 56%;
+  transform: translateX(-50%);
+  padding: 5px 9px;
+  font-size: 9px;
+  color: #ffd98e;
+  background: rgba(20, 24, 22, 0.8);
+  border: 1px solid #8a7a52;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 6;
+}
+
+/* secret tester mode badge, top-right */
+#tester-badge {
+  display: none;
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  font-size: 11px;
+  color: #e07a5f;
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  z-index: 14;
+}
+
+/* collected-papers counter, bottom-left, warm gold */
+#paper-counter {
+  position: fixed;
+  left: 26px;
+  bottom: 22px;
+  font-size: 26px;
+  color: #e9b85f;
+  text-shadow: 3px 3px 0 #000;
+  opacity: 0;
+  transition: opacity 1.4s ease;
+  pointer-events: none;
+  z-index: 12;
+}
+#paper-counter.show { opacity: 1; }
+
+/* found-text scraps: the panel turns to paper */
+#panel.paper {
+  background: #d6d0bd;
+  border-color: #8a8470;
+  color: #2e2a22;
+}
+#panel.paper .panel-head { color: #2e2a22; }
+.scrap-text { font-size: 9px; line-height: 2.1; color: #2e2a22; margin: 0 0 10px; text-align: left; }
+.scrap-src { font-size: 7px; color: #6b6452; margin: 0; }
+
+/* ✝ ★ ☠ ✉ aren't in Press Start 2P; render them bigger via fallback serif */
+.sym {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.6em;
+  line-height: 0;
+  vertical-align: -0.12em;
+}
+.sym-big { font-size: 2.4em; vertical-align: -0.16em; }
+
+/* quote panel fades out like the counter */
+#panel.fading {
+  opacity: 0;
+  transition: opacity 1.4s ease;
+}
+.repo-link { font-size: 8px; color: var(--accent); text-decoration: none; }
+.repo-link:hover { text-decoration: underline; }
+
+/* intro / pause overlay */
+#intro {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: rgba(13, 16, 14, 0.82);
+  z-index: 20;
+  text-align: center;
+  padding: 24px;
+  transition: opacity 0.5s;
+  cursor: pointer;
+}
+#intro.gone { opacity: 0; pointer-events: none; }
+#intro h1 { font-size: 24px; color: #fff; margin: 0; text-shadow: 4px 4px 0 #000; }
+#intro h1 span { color: var(--accent); }
+#intro p { font-size: 9px; color: var(--dim); margin: 0; line-height: 2; }
+#intro .hint { color: var(--text); animation: blink 1.6s steps(2) infinite; }
+@keyframes blink { 50% { opacity: 0.25; } }
