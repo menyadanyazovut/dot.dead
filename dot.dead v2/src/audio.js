@@ -7,6 +7,7 @@
 const Audio3D = (() => {
   let ctx = null;
   let master = null;
+  let masterLP = null; // dissolution: closes over the whole mix to muffle it
   let muted = false;
   let crowTimer = null;
   let birdsOn = true; // the finale silences the crows for good
@@ -401,7 +402,12 @@ const Audio3D = (() => {
     ctx = new AC();
     master = ctx.createGain();
     master.gain.value = 1;
-    master.connect(ctx.destination);
+    // the whole mix runs through a lowpass; wide open normally, closed down by
+    // the dissolution so every sound dulls toward a primitive muffle
+    masterLP = ctx.createBiquadFilter();
+    masterLP.type = 'lowpass';
+    masterLP.frequency.value = 20000;
+    master.connect(masterLP).connect(ctx.destination);
     startWind();
     scheduleCrow();
     startOrgan();
@@ -415,5 +421,19 @@ const Audio3D = (() => {
     return muted;
   }
 
-  return { start, step, splash, land, puff, crowFlee, silenceBirds, updateOrgan, organFadeOut, setRain, toggleMute };
+  // --- dissolution -----------------------------------------------------------
+  // level 0..1: muffle the entire soundscape down toward a dull, primitive tone
+  function degrade(level) {
+    if (!ctx || !masterLP) return;
+    const l = Math.max(0, Math.min(1, level));
+    const cut = 20000 * Math.pow(120 / 20000, l); // exp sweep 20 kHz → 120 Hz
+    masterLP.frequency.setTargetAtTime(cut, ctx.currentTime, 0.3);
+  }
+  // g 1..0: fade the whole mix to silence as the world disappears
+  function setMasterFade(g) {
+    if (!ctx || muted) return;
+    master.gain.setTargetAtTime(Math.max(0, Math.min(1, g)), ctx.currentTime, 0.3);
+  }
+
+  return { start, step, splash, land, puff, crowFlee, silenceBirds, updateOrgan, organFadeOut, setRain, toggleMute, degrade, setMasterFade };
 })();

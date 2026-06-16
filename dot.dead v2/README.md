@@ -50,8 +50,14 @@ glowing paper with a quote. A synthesized organ sounds from each unfound
 paper, barely audible at silhouette range, soft and clear up close. Take the
 paper (aim + E): the organ fades over 5 s, the quote and the gold counter
 (n/10) both show for 10 s and fade together. Progress resets on reload —
-every visit is a fresh hunt. Taking the last paper draws in an extreme fog
-that carries you to a bright "final field" and a gigantic statue of Athena.
+every visit is a fresh hunt. Taking the last paper begins the **dissolution**:
+the fog lifts and the world itself comes apart. Every five seconds it sheds
+10% of its detail — geometry snaps to an ever-coarser grid and slumps into
+primitives, the image chunks down to a few giant pixels, the palette collapses
+to two colours, and the whole soundscape muffles toward a dull tone. After 35 s
+the objects also begin to fade (20% every five seconds). By ~50 s the world is
+as primitive as it can be; by ~60 s it has faded out entirely, leaving you in an
+empty white infinity. (See `src/dissolve.js`.)
 
 The **compass** (E) slides up from your pocket: a metal case and a needle
 under glass, no letters. The needle always points to the nearest unfound

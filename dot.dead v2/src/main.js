@@ -35,10 +35,13 @@
   const pix = PixelRenderer.create(container);
   const compass = Compass.create(camera, graveWorld);
   const rain = Rain.create(graveWorld, camera);
+  // the finale: the last paper makes the world come apart (see src/dissolve.js)
+  const dissolve = Dissolve.create(graveWorld, pix, rain);
 
-  // controls reach the live world through a thin proxy, so a world swap is seamless
+  // controls reach the live world through a thin proxy. Once the world has
+  // fully dissolved there is nothing left to bump into — drift freely in white.
   const worldForControls = {
-    collidersNear: (x, z) => activeWorld.collidersNear(x, z),
+    collidersNear: (x, z) => (dissolve.collapsed ? [] : activeWorld.collidersNear(x, z)),
     groundHeight: (x, z) => activeWorld.groundHeight(x, z),
   };
   const controls = Controls.create(camera, worldForControls, pix.renderer.domElement, {
@@ -134,8 +137,8 @@
           UI.showQuote(result.quote, result.count, result.total);
           UI.setHint(null);
           aimedPaper = null;
-          // the thirteenth paper: the fog comes for the world
-          if (result.count >= result.total) startFinale();
+          // the thirteenth paper: the world begins to come apart
+          if (result.count >= result.total) dissolve.start();
         }
       }
     }
@@ -165,97 +168,10 @@
   const clock = new THREE.Clock();
 
   // --- the finale ------------------------------------------------------------
-  // Taking the last paper draws in an extreme fog: it thickens over 3 s to ten
-  // times the usual density, holds for 7 s, then closes to a total white-out
-  // over 3 s. At the white-out the graveyard transforms — a giant mountain has
-  // risen in its middle and the player is standing on its peak; the fog then
-  // lifts over ~6 s to reveal a clear sky and the land rolling to the horizon.
-  // All state is in memory, so a reload returns to a fresh hunt.
-  const summit = Summit.create(graveWorld, camera);
-  const greySky = new THREE.Color(0xaab7c2);    // the graveyard's own sky/fog
-  const whiteFog = new THREE.Color(0xeef5f8);   // the bright fog of the crossing
-  const horizonBlue = new THREE.Color(0xcfe6f5); // the cleared summit haze
-  const fogColor = new THREE.Color();
-  const EXTREME_FAR = 3.4;                       // 10× denser than the usual 34 m
-
-  let finaleStarted = false;
-  let finaleActive = false;
-  let finaleT = 0;
-  let arrived = false;
-  let vivid = 0; // eased clear-day grade, driven on the summit
-  // fog state captured at the trigger so the thickening starts from wherever
-  // the weather already was — no instant jump
-  let startNear = 10;
-  let startFar = 34;
-  const startFogColor = new THREE.Color();
-
-  function startFinale() {
-    if (finaleStarted) return;
-    finaleStarted = true;
-    finaleActive = true;
-    finaleT = 0;
-    arrived = false;
-    Audio3D.puff();          // the gentle whoosh as the fog rushes in
-    Audio3D.silenceBirds();
-    rain.disable();          // the rain eases out smoothly...
-    rain.releaseFog();       // ...while the finale takes over the fog
-    summit.build();          // build the (hidden) mountain + horizon while the fog gathers
-    const fog = graveWorld.scene.fog;
-    startNear = fog.near;
-    startFar = fog.far;
-    startFogColor.copy(fog.color);
-  }
-
-  function arrive() {
-    arrived = true;
-    onSummit = true;
-    activeWorld = summit.world;     // same scene; ground now includes the mountain
-    summit.activate();              // show the mountain/horizon, daylight, far camera
-    // set the player on the peak, still inside the white-out
-    controls.setPose(summit.world.spawn.x, summit.world.spawn.z, summit.world.spawn.yaw);
-  }
-
-  function updateFinale(dt) {
-    if (!finaleActive) return;
-    finaleT += dt;
-    const t = finaleT;
-    if (!arrived) {
-      const fog = graveWorld.scene.fog;
-      let near, far, cloudFade;
-      if (t < 3) {                       // thicken to 10× over 3 s, from wherever
-        const k = t / 3;                 // the fog already was (rain or clear)
-        near = startNear + (1 - startNear) * k;
-        far = startFar + (EXTREME_FAR - startFar) * k;
-        fogColor.copy(startFogColor).lerp(greySky, k); // settle to the grey base
-        cloudFade = 1 - k;               // clouds fade out as the sky vanishes
-      } else if (t < 10) {               // hold the extreme fog for 7 s
-        near = 1; far = EXTREME_FAR; fogColor.copy(greySky); cloudFade = 0;
-      } else {                           // close to a white-out over 3 s
-        const k = Math.min(1, (t - 10) / 3);
-        near = 1 + (0.1 - 1) * k;
-        far = EXTREME_FAR + (0.4 - EXTREME_FAR) * k;
-        fogColor.copy(greySky).lerp(whiteFog, k);
-        cloudFade = 0;
-      }
-      fog.near = near;
-      fog.far = far;
-      fog.color.copy(fogColor);
-      graveWorld.scene.background.copy(fogColor); // fold the sky into the fog
-      graveWorld.setCloudFade(cloudFade);
-      if (t >= 13) arrive();
-    } else {                             // on the summit: lift the fog to the horizon
-      const k = Math.min(1, (t - 13) / 6);
-      const fog = graveWorld.scene.fog;
-      const far = 0.4 * Math.pow(7000 / 0.4, k); // exponential, so the reveal rolls outward
-      fog.far = far;
-      fog.near = far * 0.25;
-      fogColor.copy(whiteFog).lerp(horizonBlue, k);
-      fog.color.copy(fogColor);
-      graveWorld.scene.background.copy(fogColor);
-      summit.setReveal(k);               // fade the blue sky dome in
-      if (k >= 1) finaleActive = false;  // free roam — walk or drop down the mountain
-    }
-  }
+  // The thirteenth paper triggers the dissolution (src/dissolve.js): the fog
+  // lifts and the world itself simplifies and fades, step by step, until only an
+  // empty white infinity remains. All state is in memory, so a reload returns to
+  // a fresh hunt.
 
   function loop() {
     requestAnimationFrame(loop);
@@ -263,13 +179,9 @@
     controls.update(dt);
     const p = controls.position;
     activeWorld.update(p.x, p.z, dt);
-    rain.update(dt); // after the finale starts, rain no longer touches the fog
-    updateFinale(dt);
+    rain.update(dt);
+    dissolve.update(dt); // once the last paper is taken, the world comes apart
     compass.update(dt, p, controls.getState());
-
-    // ease the clear-day grade in on the summit
-    vivid += ((onSummit ? 1 : 0) - vivid) * (1 - Math.exp(-1.4 * dt));
-    pix.setVivid(vivid);
 
     // the organ marks the nearest unfound paper (silent once all are found)
     Audio3D.updateOrgan(activeWorld.landmarks.nearestPaperDist(p.x, p.z));
