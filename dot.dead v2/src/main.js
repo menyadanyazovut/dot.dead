@@ -128,6 +128,7 @@
 
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyM') Audio3D.toggleMute();
+    if (e.code === 'KeyP') dissolve.start(); // debug: trigger the dissolution now
     if (e.code === 'KeyE') {
       // E takes the paper you're aiming at
       if (aimedPaper) {
