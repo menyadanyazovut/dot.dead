@@ -111,10 +111,11 @@
   let tDown = false;
   let comboLatch = false;
   let testerOn = false;
+  let zenOn = false;
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyQ') qDown = true;
     if (e.code === 'KeyT') tDown = true;
-    if (qDown && tDown && !comboLatch) {
+    if (qDown && tDown && !comboLatch && !zenOn) {
       comboLatch = true; // one toggle per simultaneous press
       testerOn = !testerOn;
       controls.setTester(testerOn);
@@ -126,11 +127,30 @@
     if (e.code === 'KeyT') { tDown = false; comboLatch = false; }
   });
 
+  // starting the dissolution always cancels zen first
+  function beginDissolve() {
+    if (zenOn) { zenOn = false; controls.setZen(false); UI.setZen(false); }
+    dissolve.start();
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.code === 'KeyM') Audio3D.toggleMute();
     // gameplay keys do nothing until the game has started (pointer locked)
     if (!controls.isLocked()) return;
-    if (e.code === 'KeyP') dissolve.start(); // debug: trigger the dissolution now
+    if (e.code === 'KeyP') beginDissolve(); // debug: trigger the dissolution now
+    if (e.code === 'KeyZ') {
+      // zen can be switched off anytime, but not switched on once the world
+      // has begun to decay
+      if (zenOn || !dissolve.active) {
+        zenOn = !zenOn;
+        if (zenOn) {
+          if (testerOn) { testerOn = false; controls.setTester(false); UI.setTester(false); }
+          if (compass.isDeployed()) compass.toggle(); // pocket the compass
+        }
+        controls.setZen(zenOn);
+        UI.setZen(zenOn);
+      }
+    }
     if (e.code === 'KeyE') {
       // E takes the paper you're aiming at
       if (aimedPaper) {
@@ -141,7 +161,7 @@
           UI.setHint(null);
           aimedPaper = null;
           // the thirteenth paper: the world begins to come apart
-          if (result.count >= result.total) dissolve.start();
+          if (result.count >= result.total) beginDissolve();
         }
       }
     }
@@ -186,8 +206,9 @@
     dissolve.update(dt); // once the last paper is taken, the world comes apart
     compass.update(dt, p, controls.getState());
 
-    // the organ marks the nearest unfound paper (silent once all are found)
-    Audio3D.updateOrgan(activeWorld.landmarks.nearestPaperDist(p.x, p.z));
+    // the organ marks the nearest unfound paper (silent once all are found, and
+    // silenced entirely in zen mode so only the environment remains)
+    Audio3D.updateOrgan(zenOn ? null : activeWorld.landmarks.nearestPaperDist(p.x, p.z));
     updatePaperAim();
 
     const near = nearestSite();

@@ -147,48 +147,66 @@ const Audio3D = (() => {
     src.start(t);
   }
 
-  // wading footstep: a wet splash instead of a dry step — brighter filtered
-  // noise burst plus a small droplet "plip". Used while the player is in a lake.
+  // wading footstep: a wet step, not a squeak. Three layers, none of them a
+  // sustained tone (the old falling sine droplet is what read as a squeak):
+  //   - a band-limited noise "shloop" whose lowpass sweeps shut, like the water
+  //     closing over the foot
+  //   - a soft low plunk for the weight of the foot displacing water
+  //   - a brief broadband fizz of spray on top, too short to ever ring
   function splash(running) {
     if (!ctx || muted) return;
     const t = ctx.currentTime;
-
-    const src = ctx.createBufferSource();
-    src.buffer = noiseBuffer(0.22);
-    const hp = ctx.createBiquadFilter();
-    hp.type = 'highpass';
-    hp.frequency.value = 700;
-    const bp = ctx.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = (running ? 1500 : 1150) + Math.random() * 400;
-    bp.Q.value = 0.7;
-
-    const peak = (running ? 0.12 : 0.09) + Math.random() * 0.03;
-    const env = ctx.createGain();
-    env.gain.setValueAtTime(0.0001, t);
-    env.gain.exponentialRampToValueAtTime(peak, t + 0.012);
-    env.gain.exponentialRampToValueAtTime(0.0001, t + (running ? 0.18 : 0.24));
-
-    // a single bright droplet on top, pitch falling
-    const osc = ctx.createOscillator();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(950 + Math.random() * 350, t + 0.01);
-    osc.frequency.exponentialRampToValueAtTime(520, t + 0.14);
-    const oenv = ctx.createGain();
-    oenv.gain.setValueAtTime(0.0001, t + 0.01);
-    oenv.gain.exponentialRampToValueAtTime(peak * 0.45, t + 0.035);
-    oenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    const peak = (running ? 0.12 : 0.092) + Math.random() * 0.03;
 
     const panner = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
     const tail = panner || ctx.createGain();
     if (panner) panner.pan.value = stepFlip * 0.12;
     stepFlip *= -1;
+    tail.connect(master);
 
-    src.connect(hp).connect(bp).connect(env).connect(tail).connect(master);
+    // body: noise with a lowpass that sweeps shut
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(0.34);
+    const hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 160;        // trim rumble, keep the wet weight
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime((running ? 1400 : 1050) + Math.random() * 250, t);
+    lp.frequency.exponentialRampToValueAtTime(360, t + 0.16);
+    const env = ctx.createGain();
+    env.gain.setValueAtTime(0.0001, t);
+    env.gain.exponentialRampToValueAtTime(peak, t + 0.014);
+    env.gain.exponentialRampToValueAtTime(0.0001, t + (running ? 0.20 : 0.28));
+    src.connect(hp).connect(lp).connect(env).connect(tail);
+
+    // low plunk: the foot's weight in the water
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.exponentialRampToValueAtTime(78, t + 0.12);
+    const oenv = ctx.createGain();
+    oenv.gain.setValueAtTime(0.0001, t);
+    oenv.gain.exponentialRampToValueAtTime(peak * 0.5, t + 0.014);
+    oenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.17);
     osc.connect(oenv).connect(tail);
+
+    // brief broadband spray fizz
+    const fz = ctx.createBufferSource();
+    fz.buffer = noiseBuffer(0.09);
+    const fhp = ctx.createBiquadFilter();
+    fhp.type = 'highpass';
+    fhp.frequency.value = 2400;
+    const fenv = ctx.createGain();
+    fenv.gain.setValueAtTime(0.0001, t);
+    fenv.gain.exponentialRampToValueAtTime(peak * 0.3, t + 0.008);
+    fenv.gain.exponentialRampToValueAtTime(0.0001, t + 0.085);
+    fz.connect(fhp).connect(fenv).connect(tail);
+
     src.start(t);
     osc.start(t);
-    osc.stop(t + 0.22);
+    osc.stop(t + 0.20);
+    fz.start(t);
   }
 
   // the finale's "puff": a gentle, noticeable soft whoosh as the fog rushes in.
@@ -336,7 +354,7 @@ const Audio3D = (() => {
   // A continuous synthesized downpour: a bright hiss layer (the patter on
   // leaves and stone) over a darker body, gently wobbled so it never reads as
   // static noise. The level is driven per-frame by Rain's visual intensity.
-  const RAIN_MAX = 0.10;
+  const RAIN_MAX = 0.085; // 15% quieter than the old 0.10
   let rainGain = null;
 
   function startRain() {

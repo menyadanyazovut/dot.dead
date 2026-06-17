@@ -5,6 +5,7 @@
 const Controls = (() => {
   const WALK_SPEED = 4.2;   // m/s
   const RUN_SPEED = 12.95;  // 85% faster than the old 7.0
+  const ZEN_SPEED = 2.2;    // slow, hands-off forward drift in zen mode
   const EYE = 1.6;
   const RADIUS = 0.45;
   const PITCH_LIMIT = Math.PI / 2 - 0.08;
@@ -24,6 +25,8 @@ const Controls = (() => {
     let lastRunning = false;
     let tester = false;         // secret tester mode: pure multipliers on top
                                 // of the defaults — base movement untouched
+    let zen = false;            // zen mode: hands-off slow walk down the road
+    let zenYaw = 0;             // the road heading locked in when zen begins
     let bobT = 0;
     let stepT = 0;
     let jumpH = 0;
@@ -53,8 +56,8 @@ const Controls = (() => {
 
     window.addEventListener('keydown', (e) => {
       keys[e.code] = true;
-      // no jumping until the game has started (pointer locked)
-      if (e.code === 'Space' && !spaceHeld && locked()) {
+      // no jumping until the game has started (pointer locked), and never in zen
+      if (e.code === 'Space' && !spaceHeld && locked() && !zen) {
         // fresh press only (keydown auto-repeats while held)
         if (!airborne) {
           // 5× jump height in tester mode → √5 × launch velocity
@@ -105,12 +108,18 @@ const Controls = (() => {
       if (keys.KeyD || keys.ArrowRight) strafe += 1;
       // no walking until the game has started (pointer locked)
       if (!locked()) { fwd = 0; strafe = 0; }
+      // zen mode: the player can't steer — face straight down the road and walk
+      // slowly forward on autopilot (mouse + WASD are ignored)
+      if (zen) {
+        yawT = zenYaw; pitchT = 0;
+        if (locked()) { fwd = 1; strafe = 0; } // auto-walk only while unpaused
+      }
       const hasInput = fwd !== 0 || strafe !== 0;
-      const running = hasInput && (keys.ShiftLeft || keys.ShiftRight);
+      const running = !zen && hasInput && (keys.ShiftLeft || keys.ShiftRight);
       lastRunning = !!running;
 
-      // look: ease toward the raw input targets
-      const lookK = ease(28, dt);
+      // look: ease toward the targets (gently in zen, so the heading aligns smoothly)
+      const lookK = ease(zen ? 3 : 28, dt);
       yaw += (yawT - yaw) * lookK;
       pitch += (pitchT - pitch) * lookK;
 
@@ -118,7 +127,7 @@ const Controls = (() => {
       let tx = 0, tz = 0;
       if (hasInput) {
         const len = Math.hypot(fwd, strafe);
-        const speed = (running ? RUN_SPEED : WALK_SPEED) * (tester ? 10 : 1);
+        const speed = zen ? ZEN_SPEED : (running ? RUN_SPEED : WALK_SPEED) * (tester ? 10 : 1);
         const fx = -Math.sin(yaw), fz = -Math.cos(yaw);
         const rx = -fz, rz = fx;
         tx = ((fx * fwd + rx * strafe) / len) * speed;
@@ -133,8 +142,8 @@ const Controls = (() => {
       if (moving) {
         const nx = pos.x + vx * dt;
         const nz = pos.z + vz * dt;
-        if (tester) {
-          // collision off in tester mode
+        if (tester || zen) {
+          // collision off in tester and zen (the road is clear)
           pos.x = nx;
           pos.z = nz;
         } else {
@@ -142,6 +151,13 @@ const Controls = (() => {
           if (!collides(nx, pos.z, colliders)) pos.x = nx; else vx = 0;
           if (!collides(pos.x, nz, colliders)) pos.z = nz; else vz = 0;
         }
+      }
+
+      // zen: glide smoothly onto the centre of the stone road (x = 0), capped so
+      // a far-off start drifts in rather than snapping
+      if (zen) {
+        const dx = -pos.x;
+        pos.x += Math.sign(dx) * Math.min(Math.abs(dx), 5 * dt);
       }
 
       // jump physics
@@ -186,6 +202,17 @@ const Controls = (() => {
       isLocked: locked,
       isAirborne: () => airborne,
       setTester: (v) => { tester = !!v; },
+      isZen: () => zen,
+      // enter/leave zen: on entry, lock the heading to whichever way down the
+      // road we're already facing (no jarring 180° spin) and level the pitch
+      setZen: (on) => {
+        zen = !!on;
+        if (zen) {
+          const norm = Math.atan2(Math.sin(yaw), Math.cos(yaw));
+          zenYaw = Math.abs(norm) < Math.PI / 2 ? 0 : Math.PI;
+          pitchT = 0;
+        }
+      },
       // teleport: drop the player at a new spot/heading and clear all motion
       // state so there's no drift or camera kick on arrival (used by the finale)
       setPose: (x, z, ya) => {

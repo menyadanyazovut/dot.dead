@@ -106,6 +106,19 @@ html, body {
   z-index: 14;
 }
 
+/* zen mode badge, top-right */
+#zen-badge {
+  display: none;
+  position: fixed;
+  top: 18px;
+  right: 22px;
+  font-size: 11px;
+  color: #9ad0c0;
+  text-shadow: 2px 2px 0 #000;
+  pointer-events: none;
+  z-index: 14;
+}
+
 /* collected-papers counter, bottom-left, warm gold */
 #paper-counter {
   position: fixed;
@@ -138,7 +151,7 @@ html, body {
   line-height: 0;
   vertical-align: -0.12em;
 }
-.sym-big { font-size: 2.4em; vertical-align: middle; }
+.sym-big { font-size: 2.4em; vertical-align: 0.04em; }
 
 /* quote panel fades out like the counter */
 #panel.fading {
@@ -167,7 +180,39 @@ html, body {
 #intro.gone { opacity: 0; pointer-events: none; }
 #intro h1 { font-size: 24px; color: #fff; margin: 0; text-shadow: 4px 4px 0 #000; }
 #intro h1 span { color: var(--accent); }
-#intro p { font-size: 9px; color: var(--dim); margin: 0; line-height: 2; }
+#intro p { font-size: 10px; color: var(--dim); margin: 0; line-height: 2; }
+
+/* controls list: one command per line, key names drawn as keycaps */
+#intro .controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  margin: 4px 0;
+}
+#intro .ctl {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 11px;
+  color: var(--dim);
+}
+#intro .ctl .keys { display: flex; gap: 5px; }
+#intro kbd {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  line-height: 1;
+  color: var(--text);
+  background: #252d28;
+  border: 1px solid var(--edge);
+  border-bottom: 3px solid #11161200;
+  border-bottom-color: #3a4239;
+  border-radius: 3px;
+  padding: 6px 7px 5px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.55);
+  min-width: 11px;
+  text-align: center;
+}
 #intro .hint { color: var(--text); animation: blink 1.6s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0.25; } }
 
@@ -183,7 +228,10 @@ html, body {
   align-items: center;
   gap: 14px;
   text-align: center;
-  padding: 0 24px;
+  padding: 22px 34px;
+  /* subtle dark backing so the logo reads over the pale, decayed sky */
+  background: rgba(13, 16, 14, 0.5);
+  border: 1px solid rgba(90, 99, 86, 0.5);
   opacity: 0;
   transition: opacity 2.5s ease;
   pointer-events: none;

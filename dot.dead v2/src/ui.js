@@ -171,6 +171,11 @@ const UI = (() => {
     if (testerBadge) testerBadge.style.display = on ? 'block' : 'none';
   }
 
+  const zenBadge = document.getElementById('zen-badge');
+  function setZen(on) {
+    if (zenBadge) zenBadge.style.display = on ? 'block' : 'none';
+  }
+
   function hide(force) {
     if (isSticky() && !force) return;
     stickyUntil = 0;
@@ -201,5 +206,5 @@ const UI = (() => {
     if (intro) intro.classList.remove('gone');
   }
 
-  return { show, showQuote, setHint, setTester, hide, setLabel, dismissIntro, showIntro, setCorruption, showEndCard };
+  return { show, showQuote, setHint, setTester, setZen, hide, setLabel, dismissIntro, showIntro, setCorruption, showEndCard };
 })();
