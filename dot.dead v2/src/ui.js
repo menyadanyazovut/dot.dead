@@ -188,6 +188,11 @@ const UI = (() => {
     if (text) label.textContent = corrupt(text, corruptionLevel);
   }
 
+  const endcard = document.getElementById('endcard');
+  function showEndCard() {
+    if (endcard) endcard.classList.add('show');
+  }
+
   function dismissIntro() {
     if (intro && !intro.classList.contains('gone')) intro.classList.add('gone');
   }
@@ -196,5 +201,5 @@ const UI = (() => {
     if (intro) intro.classList.remove('gone');
   }
 
-  return { show, showQuote, setHint, setTester, hide, setLabel, dismissIntro, showIntro, setCorruption };
+  return { show, showQuote, setHint, setTester, hide, setLabel, dismissIntro, showIntro, setCorruption, showEndCard };
 })();

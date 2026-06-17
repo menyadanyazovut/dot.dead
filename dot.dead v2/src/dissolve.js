@@ -29,8 +29,9 @@ const Dissolve = (() => {
   function create(graveWorld, pix, rain) {
     const scene = graveWorld.scene;
 
-    const T = 60;          // seconds to the fully-simplified world
-    const GRID_MAX = 0.7;  // metres — the coarsest world fusion grid
+    const T = 80;           // seconds to the fully-simplified world
+    const GRID_MAX = 2.5;   // metres — the coarse XZ grid every object welds onto
+    const END_CARD_AT = 90; // 10 s of wandering the dead ruin, then the end card
 
     // shared by every patched material: how far vertices have morphed toward
     // their bounding box (uMorph), and the world-space grid they weld onto (uGrid)
@@ -41,6 +42,7 @@ const Dissolve = (() => {
 
     let started = false;
     let active = false;
+    let endShown = false;
     let t = 0;
 
     // bake a per-vertex "boxified" target: the nearest corner of the geometry's
@@ -83,7 +85,10 @@ const Dissolve = (() => {
           '#include <project_vertex>',
           [
             'vec4 wp = modelMatrix * vec4( transformed, 1.0 );',
-            'if (uGrid > 0.0001) { wp.xyz = floor(wp.xyz / uGrid + 0.5) * uGrid; }',
+            // snap only the horizontal plane, not height: tall objects (trees)
+            // weld into a single upright rectangle, while the flat ground/road
+            // stays a flat strip instead of breaking into vertical steps
+            'if (uGrid > 0.0001) { wp.xz = floor(wp.xz / uGrid + 0.5) * uGrid; }',
             'vec4 mvPosition = viewMatrix * wp;',
             'gl_Position = projectionMatrix * mvPosition;',
           ].join('\n')
@@ -134,9 +139,9 @@ const Dissolve = (() => {
       // lurching every few seconds.
       const p = Math.min(1, t / T);
 
-      const morph = sstep(0.00, 0.78, p); // parts → boxes, complete by ~47 s
-      const fuse  = sstep(0.45, 1.00, p); // boxes weld into big blocks, 27 → 60 s
-      const merge = sstep(0.40, 1.00, p); // palette merges flat, 24 → 60 s
+      const morph = sstep(0.00, 0.65, p); // parts → boxes, complete by ~52 s
+      const fuse  = sstep(0.40, 1.00, p); // boxes weld into one block per object, 32 → 80 s
+      const merge = sstep(0.45, 1.00, p); // palette merges flat, 36 → 80 s
       const corrupt = Math.min(1, p * 1.02); // hints corrupt from the very start
       const sound = p;
 
@@ -148,6 +153,13 @@ const Dissolve = (() => {
       if (typeof Audio3D !== 'undefined') {
         Audio3D.degrade(sound);
         if (Audio3D.setMasterFade) Audio3D.setMasterFade(1 - 0.6 * sound); // muffled + distant, not silent
+      }
+
+      // after the world has fully decayed and the player has wandered the ruin
+      // for ~10 s more, raise the dot.dead end card
+      if (!endShown && t >= END_CARD_AT) {
+        endShown = true;
+        if (typeof UI !== 'undefined' && UI.showEndCard) UI.showEndCard();
       }
     }
 

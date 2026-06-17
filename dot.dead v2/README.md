@@ -57,12 +57,15 @@ image effect — and there are no stepped jumps; the world simply shifts strange
 and steadily. Two stages stack: every object is first morphed toward its own
 bounding box (spheres → cubes, cylinders and cones → boxes, a fence → plain
 rectangles, a carved headstone → a slab), then the whole scene is welded onto a
-coarse world-space grid so those boxes fuse into a few big, ultra-primitive
-blocks. In step the palette merges down to a couple of flat bands, the
-soundscape muffles to a dull distant tone, and the engraved hints on the graves
-corrupt letter by letter into gibberish (each string keeps its length). By ~60 s
-the world is at its most broken and primitive and simply stays there. (See
-`src/dissolve.js`. The fade-to-white ending is disabled for now.)
+coarse horizontal grid so those boxes weld into a single ultra-primitive shape
+per object — a tree into one upright rectangle, a bush into a block, the road
+into a flat, near-colourless strip. In step the palette merges down to a couple
+of flat bands, the soundscape muffles to a dull distant tone, and the engraved
+hints on the graves corrupt letter by letter into gibberish (each string keeps
+its length). By ~80 s the world is at its most broken and primitive; after ~10 s
+more wandering the ruin, a `dot.dead` end card fades in at the top with the dates
+and a couple of parting hints. (See `src/dissolve.js`. The fade-to-white ending
+is disabled for now.)
 
 The **compass** (E) slides up from your pocket: a metal case and a needle
 under glass, no letters. The needle always points to the nearest unfound

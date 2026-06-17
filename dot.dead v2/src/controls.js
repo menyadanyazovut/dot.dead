@@ -4,7 +4,7 @@
 
 const Controls = (() => {
   const WALK_SPEED = 4.2;   // m/s
-  const RUN_SPEED = 7.0;
+  const RUN_SPEED = 12.95;  // 85% faster than the old 7.0
   const EYE = 1.6;
   const RADIUS = 0.45;
   const PITCH_LIMIT = Math.PI / 2 - 0.08;
@@ -53,7 +53,8 @@ const Controls = (() => {
 
     window.addEventListener('keydown', (e) => {
       keys[e.code] = true;
-      if (e.code === 'Space' && !spaceHeld) {
+      // no jumping until the game has started (pointer locked)
+      if (e.code === 'Space' && !spaceHeld && locked()) {
         // fresh press only (keydown auto-repeats while held)
         if (!airborne) {
           // 5× jump height in tester mode → √5 × launch velocity
@@ -102,6 +103,8 @@ const Controls = (() => {
       if (keys.KeyS || keys.ArrowDown) fwd -= 1;
       if (keys.KeyA || keys.ArrowLeft) strafe -= 1;
       if (keys.KeyD || keys.ArrowRight) strafe += 1;
+      // no walking until the game has started (pointer locked)
+      if (!locked()) { fwd = 0; strafe = 0; }
       const hasInput = fwd !== 0 || strafe !== 0;
       const running = hasInput && (keys.ShiftLeft || keys.ShiftRight);
       lastRunning = !!running;
