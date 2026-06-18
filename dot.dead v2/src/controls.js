@@ -108,18 +108,45 @@ const Controls = (() => {
       if (keys.KeyD || keys.ArrowRight) strafe += 1;
       // no walking until the game has started (pointer locked)
       if (!locked()) { fwd = 0; strafe = 0; }
-      // zen mode: the player can't steer — face straight down the road and walk
-      // slowly forward on autopilot (mouse + WASD are ignored)
+      // zen mode: hands-off slow walk. The player can't steer; instead we pick a
+      // heading (down the road, pulled toward the road centre, and nudged around
+      // obstacles just ahead) and aim the camera along it, so we always look the
+      // way we're actually moving.
       if (zen) {
-        yawT = zenYaw; pitchT = 0;
-        if (locked()) { fwd = 1; strafe = 0; } // auto-walk only while unpaused
+        pitchT = 0;
+        if (locked()) {
+          const afx = -Math.sin(zenYaw), afz = -Math.cos(zenYaw); // road forward
+          const px = -afz, pz = afx;                              // road "right"
+          let dx = afx, dz = afz;
+          // pull back toward the centre line (x = 0)
+          const pull = Math.max(-1, Math.min(1, -pos.x / 4));
+          dx += px * pull; dz += pz * pull;
+          // steer around nearby colliders that lie ahead (trees, graves, fences)
+          const obs = world.collidersNear ? world.collidersNear(pos.x, pos.z) : [];
+          for (const c of obs) {
+            const ox = c.x - pos.x, oz = c.z - pos.z;
+            const d = Math.hypot(ox, oz);
+            if (d < 0.001 || d > 3.5) continue;
+            if (ox * afx + oz * afz <= 0) continue;     // only what's ahead
+            const s = (3.5 - d) / 3.5;                    // closer → stronger
+            const side = ox * px + oz * pz;               // which side it's on
+            const sgn = side > 0 ? -1 : 1;                // steer the other way
+            dx += px * sgn * s * 1.8; dz += pz * sgn * s * 1.8;
+          }
+          const dl = Math.hypot(dx, dz) || 1;
+          dx /= dl; dz /= dl;
+          yawT = Math.atan2(-dx, -dz); // face the way we're moving
+          fwd = 1; strafe = 0;
+        } else {
+          yawT = zenYaw; // paused: hold the road heading, don't walk
+        }
       }
       const hasInput = fwd !== 0 || strafe !== 0;
       const running = !zen && hasInput && (keys.ShiftLeft || keys.ShiftRight);
       lastRunning = !!running;
 
-      // look: ease toward the targets (gently in zen, so the heading aligns smoothly)
-      const lookK = ease(zen ? 3 : 28, dt);
+      // look: ease toward the targets (gently in zen, so the heading turns smoothly)
+      const lookK = ease(zen ? 4 : 28, dt);
       yaw += (yawT - yaw) * lookK;
       pitch += (pitchT - pitch) * lookK;
 
@@ -153,12 +180,6 @@ const Controls = (() => {
         }
       }
 
-      // zen: glide smoothly onto the centre of the stone road (x = 0), capped so
-      // a far-off start drifts in rather than snapping
-      if (zen) {
-        const dx = -pos.x;
-        pos.x += Math.sign(dx) * Math.min(Math.abs(dx), 5 * dt);
-      }
 
       // jump physics
       if (airborne) {
@@ -168,7 +189,16 @@ const Controls = (() => {
           jumpH = 0;
           vy = 0;
           airborne = false;
-          if (hooks.onLand) hooks.onLand();
+          // bunny hop: if Space is still held on landing, launch straight back
+          // up (no thud between hops) — disabled in zen / while paused
+          if (spaceHeld && locked() && !zen) {
+            vy = JUMP_V * (tester ? Math.sqrt(5) : 1);
+            airborne = true;
+            doubleJumpUsed = false;
+            if (hooks.onJump) hooks.onJump();
+          } else if (hooks.onLand) {
+            hooks.onLand();
+          }
         }
       }
 

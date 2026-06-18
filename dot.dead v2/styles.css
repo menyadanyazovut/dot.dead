@@ -56,7 +56,9 @@ html, body {
   position: fixed;
   left: 50%;
   bottom: 24px;
-  transform: translate(-50%, 160%);
+  /* hide by full height + fixed clearance, so an empty (short) panel at the very
+     start is pushed fully off-screen instead of peeking a dark sliver */
+  transform: translate(-50%, calc(100% + 60px));
   width: 460px;
   max-width: calc(100vw - 32px);
   padding: 14px 18px;
@@ -151,7 +153,7 @@ html, body {
   line-height: 0;
   vertical-align: -0.12em;
 }
-.sym-big { font-size: 2.4em; vertical-align: 0.04em; }
+.sym-big { font-size: 2.4em; vertical-align: -1px; }
 
 /* quote panel fades out like the counter */
 #panel.fading {
