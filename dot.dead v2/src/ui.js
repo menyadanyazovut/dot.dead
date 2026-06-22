@@ -198,6 +198,13 @@ const UI = (() => {
     if (endcard) endcard.classList.add('show');
   }
 
+  // phones: hide the intro and show the "not available on smartphones" message
+  const mobileBlock = document.getElementById('mobile-block');
+  function showMobileBlock() {
+    if (intro) intro.style.display = 'none';
+    if (mobileBlock) mobileBlock.classList.add('show');
+  }
+
   function dismissIntro() {
     if (intro && !intro.classList.contains('gone')) intro.classList.add('gone');
   }
@@ -206,5 +213,5 @@ const UI = (() => {
     if (intro) intro.classList.remove('gone');
   }
 
-  return { show, showQuote, setHint, setTester, setZen, hide, setLabel, dismissIntro, showIntro, setCorruption, showEndCard };
+  return { show, showQuote, setHint, setTester, setZen, hide, setLabel, dismissIntro, showIntro, setCorruption, showEndCard, showMobileBlock };
 })();

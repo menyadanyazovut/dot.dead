@@ -188,6 +188,35 @@ html, body {
 .repo-link { font-size: 8px; color: var(--accent); text-decoration: none; }
 .repo-link:hover { text-decoration: underline; }
 
+/* phones: a sad face + message over a static graveyard frame */
+#mobile-block {
+  display: none;
+  position: fixed;
+  inset: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  text-align: center;
+  padding: 28px;
+  background: rgba(13, 16, 14, 0.62);
+  z-index: 30;
+}
+#mobile-block.show { display: flex; }
+#mobile-block .mb-face {
+  font-size: 46px;
+  color: var(--accent);
+  text-shadow: 4px 4px 0 #000;
+}
+#mobile-block .mb-text {
+  font-size: 12px;
+  color: var(--text);
+  line-height: 2.1;
+  text-shadow: 2px 2px 0 #000;
+  margin: 0;
+  max-width: 340px;
+}
+
 /* intro / pause overlay */
 #intro {
   position: fixed;

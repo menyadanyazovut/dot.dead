@@ -33,6 +33,28 @@
   let onSummit = false;
 
   const pix = PixelRenderer.create(container);
+
+  // Phones/tablets can't play (no WASD, no mouse-look, no pointer lock). Instead
+  // of booting the game, build the world once, render a single STATIC frame of
+  // the graveyard (no loop, so no weather, drifting clouds, or crows), and show
+  // a polite message over it.
+  const IS_MOBILE = window.matchMedia('(hover: none) and (pointer: coarse)').matches
+    || /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (IS_MOBILE) {
+    pix.resize(window.innerWidth, window.innerHeight, camera);
+    graveWorld.update(0, 4);                 // build the chunks around spawn
+    camera.position.set(0, 2.2, 8);
+    camera.lookAt(0, 0.6, -8);               // a calm look down the path
+    pix.render(graveWorld.scene, camera);
+    window.addEventListener('resize', () => {
+      pix.resize(window.innerWidth, window.innerHeight, camera);
+      camera.lookAt(0, 0.6, -8);
+      pix.render(graveWorld.scene, camera);  // re-render the still on rotate/resize
+    });
+    UI.showMobileBlock();
+    return;
+  }
+
   const compass = Compass.create(camera, graveWorld);
   const rain = Rain.create(graveWorld, camera);
   // the finale: the last paper makes the world come apart (see src/dissolve.js)
