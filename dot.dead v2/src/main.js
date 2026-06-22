@@ -137,7 +137,6 @@
     if (e.code === 'KeyM') Audio3D.toggleMute();
     // gameplay keys do nothing until the game has started (pointer locked)
     if (!controls.isLocked()) return;
-    if (e.code === 'KeyP') beginDissolve(); // debug: trigger the dissolution now
     if (e.code === 'KeyZ') {
       // zen can be switched off anytime, but not switched on once the world
       // has begun to decay

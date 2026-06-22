@@ -227,10 +227,9 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 8.05px; /* 15% larger than 7px */
   cursor: default;
 }
-#intro .channel-cap { font-size: 8px; color: var(--dim); margin: 0; }
 #intro .qr {
   width: 94px;
   height: 94px;
