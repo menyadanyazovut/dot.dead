@@ -44,6 +44,8 @@ const Dissolve = (() => {
     let active = false;
     let endShown = false;
     let t = 0;
+    let fogNear0 = 10;  // fog at the trigger, captured so it can be lifted
+    let fogFar0 = 34;   // gradually rather than snapped open
 
     // bake a per-vertex "boxified" target: the nearest corner of the geometry's
     // own bounding box. Shared geometries are baked once and cover every clone.
@@ -119,15 +121,16 @@ const Dissolve = (() => {
         Audio3D.silenceBirds();
         Audio3D.puff(); // a soft swell to mark the moment it begins
       }
-      // stop the weather so it can't keep pulling the fog back in
+      // stop the weather, but let any active rain ease out smoothly (disable)
+      // instead of cutting it dead (hide); release fog control to us
       if (rain) {
-        if (rain.hide) rain.hide();
+        if (rain.disable) rain.disable();
         if (rain.releaseFog) rain.releaseFog();
       }
-      // lift the fog clean past the view: the world must read sharply as it
-      // falls apart, rather than dissolving into haze
+      // capture the current fog so update() can lift it gradually rather than
+      // snapping it open in a single frame
       const fog = scene.fog;
-      if (fog) { fog.near = 4000; fog.far = 9000; }
+      if (fog) { fogNear0 = fog.near; fogFar0 = fog.far; }
     }
 
     function update(dt) {
@@ -138,6 +141,13 @@ const Dissolve = (() => {
       // function of p, so the world shifts strangely and steadily rather than
       // lurching every few seconds.
       const p = Math.min(1, t / T);
+
+      // lift the fog gradually over the first few seconds — no instant clear
+      const fp = sstep(0, 1, Math.min(1, t / 5));
+      if (scene.fog) {
+        scene.fog.near = fogNear0 + (1500 - fogNear0) * fp;
+        scene.fog.far = fogFar0 + (6000 - fogFar0) * fp;
+      }
 
       const morph = sstep(0.00, 0.65, p); // parts → boxes, complete by ~52 s
       const fuse  = sstep(0.40, 1.00, p); // boxes weld into one block per object, 32 → 80 s

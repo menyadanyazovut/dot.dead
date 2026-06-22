@@ -218,6 +218,36 @@ html, body {
 #intro .hint { color: var(--text); animation: blink 1.6s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0.25; } }
 
+/* telegram channel: QR + link, pinned to the bottom of the start screen */
+#intro .channel {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  cursor: default;
+}
+#intro .channel-cap { font-size: 8px; color: var(--dim); margin: 0; }
+#intro .qr {
+  width: 94px;
+  height: 94px;
+  image-rendering: pixelated;
+  border: 4px solid #e8e3d6;
+  background: #e8e3d6;
+}
+#intro .channel-link {
+  font-size: 9px;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--accent);
+  padding-bottom: 1px;
+  cursor: pointer;
+}
+#intro .channel-link:hover { color: #fff; }
+
 /* end card: the dot.dead logo + dates + hints, fades in at the top once the
    world has fully decayed and the player has wandered the ruin a while */
 #endcard {
